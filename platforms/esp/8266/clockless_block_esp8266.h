@@ -17,8 +17,8 @@ extern uint32_t _frame_cnt;
 extern uint32_t _retry_cnt;
 #endif
 
-template <uint8_t LANES, int FIRST_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = GRB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 5>
-class InlineBlockClocklessController : public CPixelLEDController<RGB_ORDER, LANES, PORT_MASK> {
+template <uint8_t LANES, int FIRST_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = GRB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 5, bool USE_RGBW = false>
+class InlineBlockClocklessController : public CPixelLEDController<RGB_ORDER, LANES, PORT_MASK, USE_RGBW> {
 	typedef typename FastPin<FIRST_PIN>::port_ptr_t data_ptr_t;
 	typedef typename FastPin<FIRST_PIN>::port_t data_t;
 
@@ -52,6 +52,7 @@ public:
   }
 
   virtual void init() {
+	  // D6, D7, D5, D8, D2, D1
 		void (* funcs[])() ={initPin<12>, initPin<13>, initPin<14>, initPin<15>, initPin<4>, initPin<5>};
 
 		for (uint8_t i = 0; i < USED_LANES; ++i) {
@@ -127,6 +128,12 @@ public:
 
 			// Write second byte, read 3rd byte
 			writeBits<8+XTRA0,2>(last_mark, b0, allpixels);
+
+			if(allpixels.mUseRgbw) {
+				// Write third byte, read 4rd byte
+				writeBits<8+XTRA0,3>(last_mark, b0, allpixels);
+			}
+
 			allpixels.advanceData();
 
 			// Write third byte

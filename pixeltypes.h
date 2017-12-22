@@ -7,8 +7,12 @@
 #include "lib8tion.h"
 #include "color.h"
 
+#define MIN(X,Y) (((X)<(Y)) ? (X):(Y))
+#define MAX(A, B) (( (A) > (B) ) ? (A) : (B))
+
 FASTLED_NAMESPACE_BEGIN
 
+struct CRGBW;
 struct CRGB;
 struct CHSV;
 
@@ -748,7 +752,6 @@ struct CRGB {
     } HTMLColorCode;
 };
 
-
 inline __attribute__((always_inline)) bool operator== (const CRGB& lhs, const CRGB& rhs)
 {
     return (lhs.r == rhs.r) && (lhs.g == rhs.g) && (lhs.b == rhs.b);
@@ -848,6 +851,89 @@ inline CRGB operator%( const CRGB& p1, uint8_t d)
 }
 
 
+struct CRGBW {
+    union {
+        struct {
+            union {
+                uint8_t r;
+                uint8_t red;
+            };
+            union {
+                uint8_t g;
+                uint8_t green;
+            };
+            union {
+                uint8_t b;
+                uint8_t blue;
+            };
+            union {
+                uint8_t w;
+                uint8_t white;
+            };
+        };
+        uint8_t raw[4];
+    };
+
+    // default values are UNINITIALIZED
+    inline CRGBW() __attribute__((always_inline))
+    {
+    }
+
+    /// allow construction from R, G, B, W
+    inline CRGBW( uint8_t ir, uint8_t ig, uint8_t ib, uint8_t iw)  __attribute__((always_inline))
+            : r(ir), g(ig), b(ib), w(iw)
+    {
+    }
+
+    /// allow assignment from one RGB struct to another
+    inline CRGBW& operator= (const CRGBW& rhs) __attribute__((always_inline))
+    {
+        r = rhs.r;
+        g = rhs.g;
+        b = rhs.b;
+        w = rhs.w;
+        return *this;
+    }
+
+    /// allow construction from R, G, B
+    inline CRGBW( uint8_t ir, uint8_t ig, uint8_t ib, bool makeWhite = false)  __attribute__((always_inline))
+    {
+        if(makeWhite) {
+            w = MIN(ir, ig);
+            w = MIN(ib, w);
+        } else {
+            w = 0;
+        }
+        r = ir - w;
+        g = ig - w;
+        b = ib - w;
+        //Serial.printf("%0x,%0x,%0x -> %0x,%0x,%0x,%0x: %0x\n", ir, ig, ib, r,g,b,w, makeWhite);
+    }
+
+
+    /// come from CRGB
+    inline CRGBW(const CRGB& rhs, bool makeWhite = false) __attribute__((always_inline))
+    {
+        if(makeWhite) {
+            w = MIN(rhs.r, rhs.g);
+            w = MIN(rhs.b, w);
+        } else {
+            w = 0;
+        }
+        r = rhs.r - w;
+        g = rhs.g - w;
+        b = rhs.b - w;
+    }
+
+};
+
+__attribute__((always_inline))
+inline CRGBW makeScaleStruct( const CRGB& scale, bool useWhite = false)
+{
+    CRGBW s = CRGBW(scale.r, scale.g, scale.b, false);
+    s.w = useWhite ? MAX(scale.r, MAX(scale.g, scale.b)) : 0;
+    return s;
+}
 
 /// RGB orderings, used when instantiating controllers to determine what
 /// order the controller should send RGB data out in, RGB being the default

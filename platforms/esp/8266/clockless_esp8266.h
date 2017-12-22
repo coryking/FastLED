@@ -7,10 +7,13 @@ extern uint32_t _frame_cnt;
 extern uint32_t _retry_cnt;
 #endif
 
+#ifdef FASTLED_RGBW
+
 #ifdef FASTLED_HAS_PRAGMA_MESSAGE
 #    pragma message "Using RGBW controller as per FASTLED_RGBW define"
 #else
 #    warning "Using RGBW controller as per FASTLED_RGBW define"
+#endif
 #endif
 
 // Info on reading cycle counter from https://github.com/kbeckmann/nodemcu-firmware/blob/ws2812-dual/app/modules/ws2812.c
@@ -31,8 +34,8 @@ typedef struct {
 
 #define FASTLED_HAS_CLOCKLESS 1
 
-template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 9>
-class ClocklessController : public CPixelLEDController<RGB_ORDER> {
+template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 9, bool USE_RGBW = false>
+class ClocklessController : public CPixelLEDController<RGB_ORDER, 1, 0xFFFFFFFF, USE_RGBW> {
 	typedef typename FastPin<DATA_PIN>::port_ptr_t data_ptr_t;
 	typedef typename FastPin<DATA_PIN>::port_t data_t;
 
@@ -126,16 +129,29 @@ protected:
 
             output.c0 = pixels.advanceAndLoadAndScale0();
 #else
+            //Serial.printf("0 - %0x\n", b);
 			// Write first byte, read next byte
 			writeBits<8+XTRA0>(last_mark, b);
 			b = pixels.loadAndScale1();
 
+            //Serial.printf("1 - %0x\n", b);
 			// Write second byte, read 3rd byte
 			writeBits<8+XTRA0>(last_mark, b);
 			b = pixels.loadAndScale2();
 
+            //Serial.printf("2 - %0x\n", b);
+			if(pixels.mUseRgbw) {
+				// Write third byte, read 4rd byte
+				writeBits<8 + XTRA0>(last_mark, b);
+				b = pixels.loadAndScale3();
+			}
+
+            //Serial.printf("3 - %0x\n", b);
 			// Write third byte, read 1st byte of next pixel
 			writeBits<8+XTRA0>(last_mark, b);
+
+
+
 			b = pixels.advanceAndLoadAndScale0();
 #endif // FASTLED_RGBW
 

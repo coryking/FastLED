@@ -2,10 +2,11 @@
 
 FASTLED_NAMESPACE_BEGIN
 
+// TODO: FIX THIS TOO!
 #ifdef FASTLED_RGBW
 #define BYTES_PER_ELEMENT 4
 #else
-#define BYTES_PER_ELEMENT 3
+#define BYTES_PER_ELEMENT 4
 #endif
 
 #ifdef FASTLED_DEBUG_COUNT_FRAME_RETRIES
@@ -104,7 +105,7 @@ typedef struct {
 
 #define FASTLED_HAS_CLOCKLESS 1
 
-template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 9, typename T_SPEED=NeoEsp8266DmaSpeed800Kbps>
+template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 9, bool USE_RGBW=false, typename T_SPEED=NeoEsp8266DmaSpeed800Kbps>
 class ClocklessController : public CPixelLEDController<RGB_ORDER> {
     typedef typename FastPin<DATA_PIN>::port_ptr_t data_ptr_t;
     typedef typename FastPin<DATA_PIN>::port_t data_t;
@@ -332,6 +333,11 @@ protected:
             b = pixels.loadAndScale2();
             pDma = writeBits(pDma, b);
 
+            if(USE_RGBW) {
+                b = pixels.loadAndScale3();
+                pDma = writeBits(pDma, b);
+            }
+
             b = pixels.advanceAndLoadAndScale0();
 #endif // FASTLED_RGBW
 
@@ -423,7 +429,7 @@ private:
     }
 };
 
-template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER, int XTRA0, bool FLIP, int WAIT_TIME, typename T_SPEED>
-ClocklessController<DATA_PIN, T1, T2, T3, RGB_ORDER, XTRA0, FLIP, WAIT_TIME, T_SPEED>* ClocklessController<DATA_PIN, T1, T2, T3, RGB_ORDER, XTRA0, FLIP, WAIT_TIME, T_SPEED>::s_this;
+template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER, int XTRA0, bool FLIP, int WAIT_TIME, bool USE_RGBW, typename T_SPEED>
+ClocklessController<DATA_PIN, T1, T2, T3, RGB_ORDER, XTRA0, FLIP, WAIT_TIME, USE_RGBW, T_SPEED>* ClocklessController<DATA_PIN, T1, T2, T3, RGB_ORDER, XTRA0, FLIP, WAIT_TIME, USE_RGBW, T_SPEED>::s_this;
 
 FASTLED_NAMESPACE_END

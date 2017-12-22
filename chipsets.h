@@ -491,8 +491,8 @@ class LPD1886Controller1250Khz_8bit : public ClocklessController<DATA_PIN, NS(20
 template <uint8_t DATA_PIN, EOrder RGB_ORDER = RGB>
 class SK6822Controller : public ClocklessController<DATA_PIN, NS(375), NS(1000), NS(375), RGB_ORDER> {};
 
-template <uint8_t DATA_PIN, EOrder RGB_ORDER = RGB>
-class SK6812Controller : public ClocklessController<DATA_PIN, NS(300), NS(300), NS(600), RGB_ORDER> {};
+template <uint8_t DATA_PIN, EOrder RGB_ORDER = RGB, bool USE_RGBW=false>
+class SK6812Controller : public ClocklessController<DATA_PIN, NS(300), NS(300), NS(600), RGB_ORDER, 0, false, 9, USE_RGBW> {};
 
 template <uint8_t DATA_PIN, EOrder RGB_ORDER = RGB>
 class PL9823Controller : public ClocklessController<DATA_PIN, NS(350), NS(1010), NS(350), RGB_ORDER> {};
