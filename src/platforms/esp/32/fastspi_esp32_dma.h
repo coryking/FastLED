@@ -55,20 +55,18 @@ FASTLED_NAMESPACE_BEGIN
 #endif
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0)
-#define LED_STRIP_SPI_DEFAULT_HOST_DEVICE  HSPI_HOST
+#define LED_STRIP_SPI_DEFAULT_HOST_DEVICE HSPI_HOST
 #else
-#define LED_STRIP_SPI_DEFAULT_HOST_DEVICE  SPI2_HOST ///< Default is `SPI2_HOST` (`HSPI_HOST` if `esp-idf` version is v3.x).
+#define LED_STRIP_SPI_DEFAULT_HOST_DEVICE                                                                              \
+    SPI2_HOST ///< Default is `SPI2_HOST` (`HSPI_HOST` if `esp-idf` version is v3.x).
 #endif
-
-
 static const char *SPI_TAG = "fastspi_esp32_dma";
 
-template <uint8_t DATA_PIN, uint8_t CLOCK_PIN, uint32_t SPI_SPEED> class ESP32SPIOutput
+template <uint8_t DATA_PIN, uint8_t CLOCK_PIN, uint32_t SPI_SPEED> class ESP32DMASPIOutput
 {
     void *dmaBuffer;
     size_t bufferSize;
     spi_host_device_t host_device;     //< SPI host device name, such as `SPI2_HOST`.
-    int max_transfer_sz;               ///< Maximum transfer size in bytes. Defaults to 4094 if 0.
     int queue_size;                    ///< Queue size used by `spi_device_queue_trans()`.
     spi_device_handle_t device_handle; ///< Device handle assigned by the driver. The caller must provide this.
     int dma_chan;                      ///< DMA channel to use. Either 1 or 2.
@@ -80,40 +78,40 @@ template <uint8_t DATA_PIN, uint8_t CLOCK_PIN, uint32_t SPI_SPEED> class ESP32SP
     static_assert(FastPin<DATA_PIN>::validpin(), "Invalid data pin specified");
     static_assert(FastPin<CLOCK_PIN>::validpin(), "Invalid clock pin specified");
 
-    ESP32SPIOutput()
+    ESP32DMASPIOutput()
+        : host_device(LED_STRIP_SPI_DEFAULT_HOST_DEVICE), dma_chan(LED_STRIP_SPI_DEFAULT_DMA_CHAN), queue_size(1)
     {
     }
 
     esp_err_t init(size_t bufferSize)
     {
-
+        ESP_LOGD(SPI_TAG, "Buffer Size is: %d", bufferSize);
         esp_err_t err = ESP_FAIL;
 
         this->bufferSize = bufferSize;
 
-        spi_bus_config_t bus_config = {
-            .mosi_io_num = DATA_PIN,
-            .sclk_io_num = CLOCK_PIN,
-            .miso_io_num = -1,
-            .quadhd_io_num = -1,
-            .quadwp_io_num = -1,
+        spi_bus_config_t bus_config = {0};
+        bus_config.mosi_io_num = DATA_PIN;
+        bus_config.sclk_io_num = CLOCK_PIN;
+        bus_config.miso_io_num = -1;
+        bus_config.quadhd_io_num = -1;
+        bus_config.quadwp_io_num = -1;
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
-            .data4_io_num = -1,
-            .data5_io_num = -1,
-            .data6_io_num = -1,
+        bus_config.data4_io_num = -1;
+        bus_config.data5_io_num = -1;
+        bus_config.data6_io_num = -1;
 #endif
-            .flags = SPICOMMON_BUSFLAG_MASTER,
-            .max_transfer_sz = this->max_transfer_sz,
-        };
-        spi_device_interface_config_t device_interface_config = {
-            .clock_speed_hz = SPI_SPEED * 1000000, // translate from MHz to Hz
-            .mode = SPI_MODE3,
-            .spics_io_num = -1,
-            .queue_size = this->bufferSize,
-            .command_bits = 0,
-            .address_bits = 0,
-            .dummy_bits = 0,
-        };
+        bus_config.flags = SPICOMMON_BUSFLAG_MASTER;
+        bus_config.max_transfer_sz = this->bufferSize;
+
+        spi_device_interface_config_t device_interface_config = {0};
+        device_interface_config.clock_speed_hz = SPI_SPEED * 1000000; // translate from MHz to Hz
+        device_interface_config.mode = SPI_MODE3;
+        device_interface_config.spics_io_num = -1;
+        device_interface_config.queue_size = this->queue_size;
+        device_interface_config.command_bits = 0;
+        device_interface_config.address_bits = 0;
+        device_interface_config.dummy_bits = 0;
 
         this->dmaBuffer = heap_caps_malloc(this->bufferSize, MALLOC_CAP_DMA | MALLOC_CAP_32BIT);
         if (this->dmaBuffer == NULL)
@@ -260,6 +258,11 @@ template <uint8_t DATA_PIN, uint8_t CLOCK_PIN, uint32_t SPI_SPEED> class ESP32SP
     {
         // TODO: This seems broken
         this->writeByte(b);
+    }
+    void writeWord(uint16_t w) __attribute__((always_inline))
+    {
+        writeByte(w >> 8);
+        writeByte(w & 0xFF);
     }
 };
 

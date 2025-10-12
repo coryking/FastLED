@@ -5,9 +5,8 @@
 #ifdef FASTLED_ALL_PINS_HARDWARE_SPI
 #ifdef FASTLED_ESP32_SPI_DMA
 #include "fastspi_esp32_dma.h"
-#else
-#include "fastspi_esp32.h"
 #endif
+#include "fastspi_esp32.h"
 #endif
 
 #ifdef FASTLED_ESP32_I2S

@@ -261,7 +261,11 @@ template <uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER = RGB, uint32_t 
           uint32_t START_FRAME = 0x00000000, uint32_t END_FRAME = 0xFF000000>
 class APA102Controller : public CPixelLEDController<RGB_ORDER>
 {
+#ifdef FASTLED_ESP32_SPI_DMA
+    typedef ESP32DMASPIOutput<DATA_PIN, CLOCK_PIN, SPI_SPEED> SPI;
+#else
     typedef SPIOutput<DATA_PIN, CLOCK_PIN, SPI_SPEED> SPI;
+#endif
     SPI mSPI;
 
     void startBoundary()
@@ -320,9 +324,11 @@ class APA102Controller : public CPixelLEDController<RGB_ORDER>
     // hacky way to pass through the number of bytes we need to allocate...
     virtual void init()
     {
+        Serial.printf("leds: %d\n", this->m_nLeds);
         size_t numBytes = sizeof(START_FRAME) + sizeof(END_FRAME) + (sizeof(uint8_t) * 4) * this->m_nLeds;
         mSPI.init(numBytes);
     }
+
 #else
     virtual void init()
     {
