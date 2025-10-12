@@ -54,6 +54,13 @@ FASTLED_NAMESPACE_BEGIN
 #define LED_STRIP_SPI_DEFAULT_DMA_CHAN SPI_DMA_CH_AUTO
 #endif
 
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0)
+#define LED_STRIP_SPI_DEFAULT_HOST_DEVICE  HSPI_HOST
+#else
+#define LED_STRIP_SPI_DEFAULT_HOST_DEVICE  SPI2_HOST ///< Default is `SPI2_HOST` (`HSPI_HOST` if `esp-idf` version is v3.x).
+#endif
+
+
 static const char *SPI_TAG = "fastspi_esp32_dma";
 
 template <uint8_t DATA_PIN, uint8_t CLOCK_PIN, uint32_t SPI_SPEED> class ESP32SPIOutput
