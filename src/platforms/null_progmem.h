@@ -2,7 +2,6 @@
 #pragma once
 
 #include "fl/int.h"  // for FastLED integer types
-#include "ftl/cstring.h"  // for memcopy (FastLED equivalent)
 
 // Guard against PROGMEM redefinition on platforms that have their own definition
 #if !defined(PROGMEM) && !defined(__IMXRT1062__) && !defined(__MK20DX128__) && !defined(__MK20DX256__) && !defined(__MK66FX1M0__) && !defined(__MK64FX512__) && !defined(__MKL26Z64__)
@@ -19,12 +18,14 @@
 #endif
 #endif
 
-// Private helper function for safe memory copying to avoid strict aliasing issues
-// This uses fl::memcpy (FastLED equivalent) instead of standard memcpy
+// Private helper function for safe memory copying to avoid strict aliasing issues.
+// Uses __builtin_memcpy which is a compiler intrinsic that GCC/Clang will inline
+// to a single load instruction for small constant sizes, eliminating function call
+// overhead while maintaining strict aliasing correctness.
 template<typename T>
 static inline T fl_progmem_safe_read(const void* addr) {
     T result;
-    fl::memcpy(&result, addr, sizeof(T));
+    __builtin_memcpy(&result, addr, sizeof(T));
     return result;
 }
 
